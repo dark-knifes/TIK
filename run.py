@@ -20,9 +20,9 @@ import os
 if os.name == 'nt':
     import ctypes
 
-    ctypes.windll.kernel32.SetConsoleTitleW("TIK4")
+    ctypes.windll.kernel32.SetConsoleTitleW("TIK5_Alpha")
 else:
-    sys.stdout.write("\x1b]2;TIK4\x07")
+    sys.stdout.write("\x1b]2;TIK5_Alpha\x07")
     sys.stdout.flush()
 import extract_dtb
 import requests
@@ -50,8 +50,9 @@ binner = o_path.join(LOCALDIR, "bin")
 setfile = o_path.join(LOCALDIR, "bin", "settings.json")
 platform = plat.machine()
 ostype = plat.system()
-if os.getenv('PREFIX') == "/data/data/com.termux/files/usr":
-    ostype = 'Android'
+if os.getenv('PREFIX'):
+    if os.getenv('PREFIX') == "/data/data/com.termux/files/usr":
+        ostype = 'Android'
 ebinner = o_path.join(binner, ostype, platform) + os.sep
 temp = o_path.join(binner, 'temp')
 
@@ -101,8 +102,18 @@ def rmdire(path):
 def error(exception_type, exception, traceback):
     cls()
     table = Table()
+    try:
+        version = settings.version
+    except:
+        version = 'Unknown'
     table.add_column(f'[red]ERROR:{exception_type.__name__}[/]', justify="center")
-    table.add_row(f'[yellow]{exception}')
+    table.add_row(f'[yellow]Describe:{exception}')
+    table.add_row(
+        f'[yellow]Lines:{exception.__traceback__.tb_lineno}\tModule:{exception.__traceback__.tb_frame.f_globals["__name__"]}')
+    table.add_section()
+    table.add_row(
+        f'[blue]Platform:[purple]{plat.machine()}\t[blue]System:[purple]{plat.uname().system} {plat.uname().release}')
+    table.add_row(f'[blue]Python:[purple]{sys.version[:6]}\t[blue]Tool Version:[purple]{version}')
     table.add_section()
     table.add_row(f'[green]Report:https://github.com/ColdWindScholar/TIK/issues')
     Console().print(table)
@@ -175,14 +186,15 @@ class upgrade:
             except (Exception, BaseException):
                 data = None
         if not data:
-            input("链接服务器失败, 按任意按钮返回")
+            input("连接服务器失败, 按任意按钮返回")
             return
         else:
             if data.get('version', settings.version) != settings.version:
                 print(f'\033[31m {banner.banner1} \033[0m')
                 print(
-                    f"\033[0;32;40m发现新版本：\033[0m\033[0;36;40m{settings.version} --> {data.get('version')}\033[0m")
+                    f"\033[0;32;40m发现版本：\033[0m\033[0;36;40m{settings.version} --> {data.get('version')}\033[0m")
                 print(f"\033[0;32;40m更新日志：\n\033[0m\033[0;36;40m{data.get('log', '1.Fix Some Bugs')}\033[0m")
+                input("注意，交流群与release中的构建始终为最新开发环境版本，本功能仅用于检测近期较为稳定的构建")
                 try:
                     link = data['link'][plat.system()][plat.machine()]
                 except (Exception, BaseException):
@@ -241,9 +253,9 @@ class setting:
             "3": lambda: settings.change('pack_e2', '0' if input(
                 "  打包方案: [1]make_ext4fs [2]mke2fs+e2fsdroid:") == '1' else '1'),
             "6": lambda: settings.change('pack_sparse', '1' if input(
-                "  Img是否打包为sparse(压缩体积)[1/0]\n  请输入序号:") == '1' else "0"),
+                "  Img是否打包为sparse镜像(压缩体积)[1/0]\n  请输入序号:") == '1' else "0"),
             "7": lambda: settings.change('diyimgtype',
-                                         '1' if input(f"  打包镜像格式[1]同解包格式 [2]可选择:") == '2' else ''),
+                                         '1' if input(f"  打包镜像系统[1]同解包格式 [2]可选择:") == '2' else ''),
             "8": lambda: settings.change('erofs_old_kernel',
                                          '1' if input(f"  EROFS打包是否支持旧内核[1/0]") == '1' else '0')
         }
@@ -279,7 +291,7 @@ class setting:
         elif op_pro == '5':
             if input("  设置打包UTC时间戳[1]自动 [2]自定义:") == "2":
                 utcstamp = input("  请输入: ")
-                settings.change('utcstamp', utcstamp if utcstamp.isdigit() else '1230768000')
+                settings.change('utcstamp', utcstamp if utcstamp.isdigit() else '1717840117')
             else:
                 settings.change('utcstamp', '')
         else:
@@ -342,7 +354,7 @@ class setting:
         if op_pro == "0":
             return
         elif op_pro == '1':
-            print(f"  首页banner: [1]TIK4 [2]镰刀斧头 [3]TIK2 [4]原神 [5]DXY [6]None")
+            print(f"  首页banner: [1]TIK5 [2]镰刀斧头 [3]TIK2 [4]原神 [5]DXY [6]None")
             banner_i = input("  请输入序号: ")
             if banner_i.isdigit():
                 if 0 < int(banner_i) < 7:
@@ -371,8 +383,7 @@ class setting:
         print("Yeliqin666")
         print('YukongA')
         print("\033[0m")
-        print('\033[31m---------------------------------\033[0m')
-        input('\033[92m Powered By MIO-KITCHEN-ENVS\033[0m')
+        input('\033[31m---------------------------------\033[0m')
 
     def __init__(self):
         cls()
@@ -438,7 +449,7 @@ def plug_parse(js_on):
                                     text, value = option.split('|')
                                     self.gavs[radio_var_name] = value
                                     print(f"[{cs}] {text}")
-                                    gavs["%s" % cs] = value
+                                    gavs[str(cs)] = value
                                 print("---------------------------")
                                 op_in = input("请输入您的选择:")
                                 self.gavs[radio_var_name] = gavs[op_in] if op_in in gavs.keys() else gavs["1"]
@@ -474,7 +485,7 @@ class Tool:
             print(f'\033[31m {getattr(banner, "banner%s" % settings.banner)} \033[0m')
         else:
             print("=" * 50)
-        print("\033[92;44m TIK4 Final Ver. \033[0m")
+        print("\033[93;44m Alpha Edition \033[0m")
         if settings.online == 'true':
             try:
                 content = json.loads(requests.get('https://v1.jinrishici.com/all.json', timeout=2).content.decode())
@@ -496,7 +507,7 @@ class Tool:
             if os.path.isdir(o_path.join(LOCALDIR, pros)):
                 pro += 1
                 print(f"   [{pro}]  {pros}\n")
-                projects['%s' % pro] = pros
+                projects[str(pro)] = pros
         print("  --------------------------------------")
         print("\033[33m  [55] 解压  [66] 退出  [77] 设置  [88] 下载ROM\033[0m\n")
         op_pro = input("  请输入序号：")
@@ -534,7 +545,7 @@ class Tool:
                 input("任意按钮继续")
         elif op_pro == '66':
             cls()
-            ysuc("\n感谢使用TI-KITCHEN4,再见！")
+            ysuc("\n感谢使用TI-KITCHEN5,再见！")
             sys.exit(0)
         elif op_pro == '77':
             setting()
@@ -544,9 +555,10 @@ class Tool:
                 self.project()
             else:
                 ywarn("  Input error!")
+                input("任意按钮继续")
         else:
             ywarn("  Input error!")
-        input("任意按钮继续")
+            input("任意按钮继续")
         self.main()
 
     @staticmethod
@@ -555,11 +567,20 @@ class Tool:
         if not os.path.exists(fstab):
             return
         with open(fstab, "r") as sf:
-            details = re.sub(",avb_keys=.*avbpubkey", "", sf.read())
-        details = re.sub(",avb=vbmeta_system", ",", details)
+            details = sf.read()
+        if not re.search(",avb=vbmeta_system", details):
+            # it may be "system /system erofs ro avb=vbmeta_system,..."
+            details = re.sub("avb=vbmeta_system,", "", details)
+        else:
+            details = re.sub(",avb=vbmeta_system", ",", details)
+        if not re.search(",avb", details):
+            # it may be "product /product ext4 ro avb,..."
+            details = re.sub("avb,", "", details)
+        else:
+            details = re.sub(",avb", "", details)
+        details = re.sub(",avb_keys=.*avbpubkey", "", details)
         details = re.sub(",avb=vbmeta_vendor", "", details)
         details = re.sub(",avb=vbmeta", "", details)
-        details = re.sub(",avb", "", details)
         with open(fstab, "w") as tf:
             tf.write(details)
 
@@ -611,7 +632,7 @@ class Tool:
             self.custom_rom()
         else:
             ywarn('   Input error!')
-        input("任意按钮继续")
+            input("任意按钮继续")
         self.project()
 
     def custom_rom(self):
@@ -704,8 +725,8 @@ class Tool:
                                 os.path.join(project, f), os.F_OK):
                             shutil.copy(os.path.join(project, str(f)), os.path.join(project, 'TI_out'))
         elif chose == '2':
-            code = input("打包卡线一体限制机型代号:")
-            utils.dbkxyt(os.path.join(project, 'TI_out') + os.sep, code, binner + os.sep + 'extra_flash.zip')
+            utils.dbkxyt(os.path.join(project, 'TI_out') + os.sep, input("打包卡线一体限制机型代号:"),
+                         binner + os.sep + 'extra_flash.zip')
         else:
             return
         zip_file(os.path.basename(project) + ".zip", project + os.sep + 'TI_out', project + os.sep, LOCALDIR + os.sep)
@@ -746,10 +767,10 @@ class Tool:
                 self.project()
             else:
                 ywarn("Input Error")
-                time.sleep(0.3)
+                input("任意按钮继续")
         else:
             ywarn("Input error!")
-            time.sleep(0.3)
+            input("任意按钮继续")
 
 
 def get_all_file_paths(directory) -> Ellipsis:
@@ -759,7 +780,7 @@ def get_all_file_paths(directory) -> Ellipsis:
             yield os.path.join(root, filename)
 
 
-class zip_file(object):
+class zip_file:
     def __init__(self, file, dst_dir, local, path=None):
         if not path:
             path = LOCALDIR + os.sep
@@ -861,13 +882,13 @@ class installmpk:
         with zipfile.ZipFile(mpk, 'r') as myfile:
             with myfile.open('info') as info_file:
                 self.mconf.read_string(info_file.read().decode('utf-8'))
-            with myfile.open('%s' % (self.mconf.get('module', 'resource')), 'r') as inner_file:
+            with myfile.open(self.mconf.get('module', 'resource'), 'r') as inner_file:
                 self.inner_zipdata = inner_file.read()
                 self.inner_filenames = zipfile.ZipFile(BytesIO(self.inner_zipdata)).namelist()
         print('''
          \033[36m
         ----------------
-           MIO-PACKAGE
+           安装新插件
         ----------------
         ''')
         print("插件名称：" + self.mconf.get('module', 'name'))
@@ -908,12 +929,12 @@ class installmpk:
             depends = self.mconf.get('module', 'depend')
         except (Exception, BaseException):
             depends = ''
-        minfo = {"name": "%s" % (self.mconf.get('module', 'name')),
-                 "author": "%s" % (self.mconf.get('module', 'author')),
-                 "version": "%s" % (self.mconf.get('module', 'version')),
-                 "identifier": "%s" % (self.mconf.get('module', 'identifier')),
-                 "describe": "%s" % (self.mconf.get('module', 'describe')),
-                 "depend": "%s" % depends}
+        minfo = {"name": self.mconf.get('module', 'name'),
+                 "author": self.mconf.get('module', 'author'),
+                 "version": self.mconf.get('module', 'version'),
+                 "identifier": self.mconf.get('module', 'identifier'),
+                 "describe": self.mconf.get('module', 'describe'),
+                 "depend": depends}
         with open(binner + os.sep + "subs" + os.sep + self.mconf.get('module', 'identifier') + os.sep + "info.json",
                   'w') as f:
             json.dump(minfo, f, indent=2)
@@ -1151,7 +1172,13 @@ def packChoo(project):
             else:
                 form = 'img'
             if settings.diyimgtype == '1':
-                imgtype = "erofs" if input("手动打包所有分区格式为：[1]ext4 [2]erofs:") == "2" else "ext"
+                imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+                if imgtype == '1':
+                    imgtype = 'ext'
+                elif imgtype == '2':
+                    imgtype = "erofs"
+                else:
+                    imgtype = 'f2fs'
             else:
                 imgtype = 'ext'
             for f in track(parts.keys()):
@@ -1159,7 +1186,7 @@ def packChoo(project):
                 if types[f] == 'bootimg':
                     dboot(project + os.sep + parts[f], project + os.sep + parts[f] + ".img")
                 elif types[f] == 'dtb':
-                    makedtb(project + os.sep + parts[f], project)
+                    makedtb(parts[f], project)
                 elif types[f] == 'dtbo':
                     makedtbo(parts[f], project)
                 else:
@@ -1173,7 +1200,13 @@ def packChoo(project):
             else:
                 form = 'img'
             if settings.diyimgtype == '1':
-                imgtype = "erofs" if input("手动打包所有分区格式为：[1]ext4 [2]erofs") == "2" else "ext"
+                imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+                if imgtype == '1':
+                    imgtype = 'ext'
+                elif imgtype == '2':
+                    imgtype = "erofs"
+                else:
+                    imgtype = 'f2fs'
             else:
                 imgtype = 'ext'
             for f in parts.keys():
@@ -1185,7 +1218,7 @@ def packChoo(project):
                 if types[f] == 'bootimg':
                     dboot(project + os.sep + parts[f], project + os.sep + parts[f] + ".img")
                 elif types[f] == 'dtb':
-                    makedtb(project + os.sep + parts[f], project)
+                    makedtb(parts[f], project)
                 elif types[f] == 'dtbo':
                     makedtbo(parts[f], project)
                 else:
@@ -1199,7 +1232,13 @@ def packChoo(project):
         elif filed.isdigit():
             if int(filed) in parts.keys():
                 if settings.diyimgtype == '1' and types[int(filed)] not in ['bootimg', 'dtb', 'dtbo']:
-                    imgtype = "erofs" if input("  手动打包所有分区格式为：[1]ext4 [2]erofs") == "2" else "ext"
+                    imgtype = input("手动打包所有分区格式为：[1]ext4 [2]erofs [3]f2fs:")
+                    if imgtype == '1':
+                        imgtype = 'ext'
+                    elif imgtype == '2':
+                        imgtype = "erofs"
+                    else:
+                        imgtype = 'f2fs'
                 else:
                     imgtype = 'ext'
                 if settings.diyimgtype == '1' and types[int(filed)] not in ['bootimg', 'dtb', 'dtbo']:
@@ -1216,7 +1255,7 @@ def packChoo(project):
                 if types[int(filed)] == 'bootimg':
                     dboot(project + os.sep + parts[int(filed)], project + os.sep + parts[int(filed)] + ".img")
                 elif types[int(filed)] == 'dtb':
-                    makedtb(project + os.sep + parts[int(filed)], project)
+                    makedtb(parts[int(filed)], project)
                 elif types[int(filed)] == 'dtbo':
                     makedtbo(parts[int(filed)], project)
                 else:
@@ -1318,7 +1357,7 @@ def unpackboot(file, project):
 
 
 def undtb(project, infile):
-    dtbdir = project + os.sep + os.path.basename(infile).split(".")[0] + "_dtbs"
+    dtbdir = project + os.sep + os.path.basename(infile).split(".")[0]
     rmdire(dtbdir)
     if not os.path.exists(dtbdir):
         os.makedirs(dtbdir)
@@ -1332,19 +1371,20 @@ def undtb(project, infile):
             call(
                 f'dtc -@ -I dtb -O dts {dtb} -o {dts}',
                 out=1)
-    open(project + os.sep + os.sep + "config" + os.sep + "dtbinfo_" + os.path.basename(infile).split(".")[0]).close()
+    open(project + os.sep + os.sep + "config" + os.sep + "dtbinfo_" + os.path.basename(infile).split(".")[0],
+         'w').close()
     ysuc("反编译完成!")
     time.sleep(1)
 
 
 def makedtb(sf, project):
-    dtbdir = project + os.sep + sf + "_dtbs"
+    dtbdir = project + os.sep + sf
     rmdire(dtbdir + os.sep + "new_dtb_files")
     os.makedirs(dtbdir + os.sep + "new_dtb_files")
-    for dts_files in os.listdir(dtbdir + os.sep + "dts_files"):
+    for dts_files in os.listdir(dtbdir + os.sep + "dtb_files"):
         new_dtb_files = dts_files.split('.')[0]
         yecho(f"正在回编译{dts_files}为{new_dtb_files}.dtb")
-        dtb_ = dtbdir + os.sep + "dts_files" + os.sep + dts_files
+        dtb_ = dtbdir + os.sep + "dtb_files" + os.sep + dts_files
         if call(f'dtc -@ -I "dts" -O "dtb" "{dtb_}" -o "{dtbdir + os.sep}new_dtb_files{os.sep}{new_dtb_files}.dtb"',
                 out=1) != 0:
             ywarn("回编译dtb失败")
@@ -1354,7 +1394,6 @@ def makedtb(sf, project):
                 with open(os.path.abspath(dtb), 'rb') as f:
                     sff.write(f.read())
     ysuc("回编译完成！")
-    input("任意按钮继续")
 
 
 def undtbo(project, infile):
@@ -1406,7 +1445,6 @@ def makedtbo(sf, project):
         ywarn(f"{os.path.basename(sf).split('.')[0]}.img生成失败!")
     else:
         ysuc(f"{os.path.basename(sf).split('.')[0]}.img生成完毕!")
-    input("任意按钮继续")
 
 
 def inpacker(name, project, form, ftype, json_=None):
@@ -1448,7 +1486,12 @@ def inpacker(name, project, form, ftype, json_=None):
         call(
             f'mkfs.erofs {other_} -z{settings.erofslim}  -T {utc} --mount-point=/{name} --fs-config-file={fs_config} --product-out={os.path.dirname(out_img)} --file-contexts={file_contexts} {out_img} {in_files}')
     elif ftype == 'f2fs':
-        pass
+        size_f2fs = (54 * 1024 * 1024) + img_size1
+        size_f2fs = int(size_f2fs*1.15)+1
+        with open(out_img, 'wb') as f:
+            f.truncate(size_f2fs)
+        call(f'mkfs.f2fs {out_img} -O extra_attr -O inode_checksum -O sb_checksum -O compression -f')
+        call(f'sload.f2fs -f {in_files} -C {fs_config} -s {file_contexts} -t /{name} {out_img} -c')
     else:
         if os.path.exists(file_contexts):
             if settings.pack_e2 == '0':
@@ -1567,9 +1610,8 @@ def insuper(Imgdir, outputimg, ssize, stype, sparse):
     superpa += f"-block-size={settings.SBLOCKSIZE} "
     for imag in os.listdir(Imgdir):
         if imag.endswith('.img'):
-            image = imag.split('.')[0].replace("_a", "").replace("_b", "")
+            image = imag.replace("_a.img", "").replace("_b.img", "").replace(".img", "")
             if f'partition {image}:readonly' not in superpa and f'partition {image}_a:readonly' not in superpa:
-                print(f"待打包分区:{image}")
                 if stype in ['VAB', 'AB']:
                     if os.path.isfile(Imgdir + os.sep + image + "_a.img") and os.path.isfile(
                             Imgdir + os.sep + image + "_b.img"):
@@ -1579,14 +1621,23 @@ def insuper(Imgdir, outputimg, ssize, stype, sparse):
                         group_size_b += img_sizeb
                         superpa += f"--partition {image}_a:readonly:{img_sizea}:{settings.super_group}_a --image {image}_a={Imgdir}{os.sep}{image}_a.img --partition {image}_b:readonly:{img_sizeb}:{settings.super_group}_b --image {image}_b={Imgdir}{os.sep}{image}_b.img "
                     else:
+                        if not os.path.exists(Imgdir + os.sep + image + ".img") and os.path.exists(
+                                Imgdir + os.sep + image + "_a.img"):
+                            os.rename(Imgdir + os.sep + image + "_a.img", Imgdir + os.sep + image + ".img")
+
                         img_size = os.path.getsize(Imgdir + os.sep + image + ".img")
                         group_size_a += img_size
                         group_size_b += img_size
                         superpa += f"--partition {image}_a:readonly:{img_size}:{settings.super_group}_a --image {image}_a={Imgdir}{os.sep}{image}.img --partition {image}_b:readonly:0:{settings.super_group}_b "
                 else:
+                    if not os.path.exists(Imgdir + os.sep + image + ".img") and os.path.exists(
+                            Imgdir + os.sep + image + "_a.img"):
+                        os.rename(Imgdir + os.sep + image + "_a.img", Imgdir + os.sep + image + ".img")
+
                     img_size = os.path.getsize(Imgdir + os.sep + image + ".img")
                     superpa += f"--partition {image}:readonly:{img_size}:{settings.super_group} --image {image}={Imgdir}{os.sep}{image}.img "
                     group_size_a += img_size
+                print(f"已添加分区:{image}")
     supersize = ssize
     if not supersize:
         supersize = group_size_a + 4096000
@@ -1600,12 +1651,11 @@ def insuper(Imgdir, outputimg, ssize, stype, sparse):
         superpa += f" --group {settings.super_group}:{supersize} "
     superpa += f"{settings.fullsuper} {settings.autoslotsuffixing} --output {outputimg}"
     ywarn("创建super.img失败！") if call(f'lpmake {superpa}') != 0 else ysuc("成功创建super.img!")
-    input("任意按钮继续")
 
 
 def packpayload(project):
     if ostype != 'Linux':
-        print(f"不支持当前系统:{ostype},目前只支持:Linux")
+        print(f"不支持当前系统:{ostype},目前只支持:Linux(aarch64&x86)")
         input("任意按钮继续")
         return
     if os.path.exists(project + os.sep + 'payload'):
@@ -1616,7 +1666,7 @@ def packpayload(project):
     else:
         os.makedirs(project + os.sep + 'payload')
     ywarn(f"请将所有分区镜像放置于{project + os.sep}payload中！")
-    yecho("很耗时、很费CPU、很费内存，由于无官方签名故意义不大，请考虑后使用")
+    yecho("这项功能很耗时、很费CPU、很费内存，若无官方签名则意义不大，请考虑后使用")
     if not os.listdir(project + os.sep + 'payload'):
         print("您似乎没有要打包的分区，要移动下列分区打包吗：")
         move_list = []
@@ -1641,7 +1691,7 @@ def packpayload(project):
     elif checkssize == '3':
         supersize = tool_auto_size
     else:
-        supersize = input("请输入super分区大小（字节数）	")
+        supersize = input("请输入super分区大小（字节数）： ")
     yecho(f"打包到{project}/TI_out/payload...")
     inpayload(supersize, project)
 
@@ -1674,7 +1724,6 @@ def inpayload(supersize, project):
         LOGS("成功创建payload!") if call(
             f"delta_generator --in_file={out} --properties_file={project + os.sep + 'config' + os.sep}payload_properties.txt") == 0 else LOGE(
             "创建payload失败！")
-    input("任意按钮继续")
 
 
 def unpack(file, info, project):
@@ -1787,7 +1836,7 @@ def unpack(file, info, project):
         unpack(os.path.join(filepath, partname + ".img"), gettype(os.path.join(filepath, partname + ".img")), project)
     elif info == 'erofs':
         call(f'extract.erofs -i {os.path.abspath(file)} -o {project} -x')
-    elif info == 'f2fs':
+    elif info == 'f2fs' and os.name == 'posix':
         call(f'extract.f2fs -o {project} {os.path.abspath(file)}')
     elif info == 'super':
         lpunpack.unpack(os.path.abspath(file), project)
